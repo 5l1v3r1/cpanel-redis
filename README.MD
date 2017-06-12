@@ -5,7 +5,7 @@
 + Compiles the redis.so extension files for all versions of PHP installed
 
 #### Requirements:
-+ EasyApache4
++ EasyApache4 or EA3 with PHP Switcher
 + Python2.6 or 2.7
 
 > Support for EasyApache3 will be added later
