@@ -18,10 +18,8 @@ def install_sys_redis():
     os.system("yum install -y epel-release")
     os.system("yum update")
     os.system("yum install -y redis jemalloc")
-    with open('/etc/yum.repos.d/epel.repo', r) as fh:
-        epel_repo = fh.readlines()
-    os.system("systemctl start redis")
-    os.system("systemctl enable redis")
+    os.system("service start redis")
+    os.system("chkconfig redis on")
 
 def php_redis_url():
     r = urllib2.urlopen('https://pecl.php.net/package/redis', timeout = 240)
@@ -45,7 +43,17 @@ def get_php_versions():
             continue
         if os.path.isfile('/opt/cpanel/{0}/root/usr/bin/php'.format(fn)):
             php_list.append(fn)
-    return php_list
+    if php_list:
+        return php_list
+    for fn in os.listdir('/opt/'):
+        if not fn.startswith('php'):
+            continue
+        if os.path.isfile('/opt/{0}/bin/php'.format(fn)):
+            php_list.append(fn)
+    if php_list:
+        return php_list
+    else:
+        return ['system']
 
 def build_php_redis(php_version, redis_dir_name):
     os.chdir('/usr/local/src')
@@ -53,13 +61,38 @@ def build_php_redis(php_version, redis_dir_name):
         if 'redis-' in dir:
             redis_dir_name = dir
     os.chdir(redis_dir_name)
-    os.system('/opt/cpanel/{0}/root/usr/bin/phpize'.format(php_version))
-    os.system('./configure --with-php-config=/opt/cpanel/{0}/root/usr/bin/php-config'.format(php_version))
+    if php_version == 'system':
+        phpize = '/usr/bin/phpize'
+        php_binary = '/usr/bin/php'
+        php_config = '/usr/bin/php-config'
+        main_ini = '/usr/local/lib/php.ini'
+        additional_dir = None
+    elif php_version.startswith('php'):
+        if php_version == 'php52':
+            return
+        phpize = '/opt/{0}/bin/phpize'.format(php_version)
+        php_binary = '/opt/{0}/bin/php'.format(php_version)
+        php_config = '/opt/{0}/bin/php-config'.format(php_version)
+        main_ini = '/opt/{0}/lib/php/php.ini'.format(php_version)
+        additional_dir = None
+    else:
+        phpize = '/opt/cpanel/{0}/root/usr/bin/phpize'.format(php_version)
+        php_binary = '/opt/cpanel/{0}/root/usr/bin/php'.format(php_version)
+        php_config = '/opt/cpanel/{0}/root/usr/bin/php-config'.format(php_version)
+        additional_dir = '/opt/cpanel/{0}/root/etc/php.d/'.format(php_version)
+
+    os.system(phpize)
+    os.system('./configure --with-php-config={0}'.format(php_config))
     os.system('make')
-    extension_dir = get_extension_dir('/opt/cpanel/{0}/root/usr/bin/php'.format(php_version))
-    shutil.copy2('/usr/local/src/{0}/modules/redis.so'.format(redis_dir_name), '/opt/cpanel/{0}/root/usr/lib64/php/modules/'.format(php_version))
-    with open('/opt/cpanel/{0}/root/etc/php.d/redis.ini'.format(php_version), 'w') as fh:
-        print('extension = redis.so', file=fh)
+    extension_dir = get_extension_dir(php_binary)
+    shutil.copy2('/usr/local/src/{0}/modules/redis.so'.format(redis_dir_name), extension_dir)
+    if additional_dir:
+        with open('{0}/redis.ini'.format(additional_dir), 'w') as fh:
+            print('extension = redis.so', file=fh)
+    else:
+        with open(main_ini, 'r+a') as fh:
+            if 'extension = redis.so' not in fh.readlines():
+                print('extension = redis.so', file=fh)
     os.chdir('/usr/local/src')
     shutil.rmtree('/usr/local/src/{0}'.format(redis_dir_name))
     return
