@@ -13,5 +13,7 @@
 #### Usage:
 > Run as root or sudoer with sudo
 
-```wget https://github.com/Leo675/cpanel-redis/blob/master/redis.py
-python redis.py```
+```
+wget https://github.com/Leo675/cpanel-redis/blob/master/redis.py
+python redis.py
+```
