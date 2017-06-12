@@ -20,8 +20,6 @@ def install_sys_redis():
     os.system("yum install -y redis jemalloc")
     with open('/etc/yum.repos.d/epel.repo', r) as fh:
         epel_repo = fh.readlines()
-
-    os.system('sed -i "s%enabled=1%enabled=1\\nincludepkgs=redis,jemalloc%" /etc/yum.repos.d/epel.repo')
     os.system("systemctl start redis")
     os.system("systemctl enable redis")
 
