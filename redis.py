@@ -16,7 +16,7 @@ def install_sys_redis():
     except:
         pass
     os.system("yum install -y epel-release")
-    os.system("yum update")
+    os.system("yum update -y")
     os.system("yum install -y redis jemalloc")
     os.system("service start redis")
     os.system("chkconfig redis on")
