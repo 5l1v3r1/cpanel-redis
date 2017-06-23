@@ -11,7 +11,7 @@ import socket
 
 def install_sys_redis():
     try:
-        if sys.argv[1] == 'phponly':
+        if sys.argv[1] == '--phponly':
             return
     except:
         pass
